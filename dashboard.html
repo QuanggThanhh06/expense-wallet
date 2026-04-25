@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense Wallet</title>
+  <link rel="stylesheet" href="dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+  <div class="app">
+
+    <!-- Tổng quan -->
+    <section id="overviewPage" class="page active-page">
+      <header class="top-header">
+        <div>
+          <h1 id="walletBalance">0 đ</h1>
+          <p>Tổng số dư</p>
+        </div>
+        <div class="header-icons">
+          <span>🔍</span>
+          <span>🔔</span>
+        </div>
+      </header>
+
+      <div class="card wallet-card">
+        <div class="card-title">
+          <h2>Ví của tôi</h2>
+          <span>Xem tất cả</span>
+        </div>
+        <div class="wallet-row">
+          <div class="wallet-icon">👛</div>
+          <p>Ví tiền ảo</p>
+          <strong id="walletMiniBalance">0 đ</strong>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <h2>Báo cáo tháng này</h2>
+        <span>Xem báo cáo</span>
+      </div>
+
+      <div class="card report-card">
+        <div class="report-summary">
+          <div>
+            <p>Tổng đã chi</p>
+            <strong id="totalExpense">0 đ</strong>
+          </div>
+          <div>
+            <p>Tổng thu</p>
+            <strong id="totalIncome">0 đ</strong>
+          </div>
+        </div>
+        <canvas id="overviewChart"></canvas>
+      </div>
+
+      <div class="section-title">
+        <h2>Chi tiêu nhiều nhất</h2>
+        <span>Xem chi tiết</span>
+      </div>
+
+      <div class="card top-spending-card" id="topSpendingList">
+        <p class="empty-text">Chưa có dữ liệu chi tiêu</p>
+      </div>
+    </section>
+
+    <!-- Lịch sử giao dịch -->
+    <section id="historyPage" class="page">
+      <h1 class="page-title">Lịch sử giao dịch</h1>
+
+      <div class="filter-card">
+        <label>Từ ngày</label>
+        <input type="date" id="fromDate" />
+        <label>Đến ngày</label>
+        <input type="date" id="toDate" />
+        <button id="filterBtn">Lọc giao dịch</button>
+        <button id="clearFilterBtn" class="gray-btn">Xóa lọc</button>
+      </div>
+
+      <div id="transactionList" class="transaction-list"></div>
+    </section>
+
+    <!-- Thêm giao dịch -->
+    <section id="addPage" class="page">
+      <h1 class="page-title">Thêm giao dịch</h1>
+
+      <div class="quick-actions-grid">
+        <button class="quick-action" onclick="openPayForm('Tiền điện')">⚡<span>Tiền điện</span></button>
+        <button class="quick-action" onclick="openPayForm('Tiền nước')">💧<span>Tiền nước</span></button>
+        <button class="quick-action" onclick="openPayForm('Học phí')">🎓<span>Học phí</span></button>
+        <button class="quick-action" onclick="openPayForm('Khoản vay')">💳<span>Khoản vay</span></button>
+        <button class="quick-action" onclick="openPayForm('Vé máy bay')">✈️<span>Vé máy bay</span></button>
+        <button class="quick-action" onclick="openPayForm('Vé tàu')">🚆<span>Vé tàu</span></button>
+        <button class="quick-action" onclick="openPayForm('Internet')">🌐<span>Internet</span></button>
+        <button class="quick-action" onclick="openPayForm('Khác')">🧾<span>Khác</span></button>
+      </div>
+
+      <div class="card form-card">
+        <h2 id="payFormTitle">Thanh toán hóa đơn</h2>
+
+        <div class="card scan-card">
+  <h2>Quét nhanh</h2>
+
+  <div class="scan-actions">
+    <button type="button" id="startQrBtn">Quét QR</button>
+    <button type="button" id="stopQrBtn" class="gray-btn">Dừng QR</button>
+  </div>
+
+  <div id="qrReader" class="qr-reader hidden"></div>
+
+  <div class="ocr-box">
+    <label>Chọn ảnh hóa đơn để OCR</label>
+    <input type="file" id="receiptImage" accept="image/*" />
+
+    <button type="button" id="scanOcrBtn">Quét hóa đơn OCR</button>
+
+    <img id="receiptPreview" class="receipt-preview hidden" alt="Ảnh hóa đơn" />
+
+    <p id="scanStatus" class="scan-status"></p>
+
+    <textarea id="ocrResultText" class="ocr-result hidden" readonly></textarea>
+  </div>
+</div>
+
+        <form id="payForm">
+          <select id="serviceType" required>
+            <option value="">-- Chọn dịch vụ --</option>
+            <option value="Tiền điện">Tiền điện</option>
+            <option value="Tiền nước">Tiền nước</option>
+            <option value="Internet">Internet</option>
+            <option value="Học phí">Học phí</option>
+            <option value="Khoản vay">Khoản vay</option>
+            <option value="Vé máy bay">Vé máy bay</option>
+            <option value="Vé tàu">Vé tàu</option>
+            <option value="Ăn uống">Ăn uống</option>
+            <option value="Mua sắm">Mua sắm</option>
+            <option value="Khác">Khác</option>
+          </select>
+
+          <input type="text" id="billCode" placeholder="Mã hóa đơn / mã khách hàng" required />
+          <input type="number" id="payAmount" placeholder="Số tiền thanh toán" required />
+          <textarea id="payNote" placeholder="Ghi chú"></textarea>
+
+          <button type="submit">Thanh toán</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Ví tiền -->
+    <section id="walletPage" class="page">
+  <h1 class="page-title">Ví tiền ảo</h1>
+
+  <div class="wallet-balance-box">
+    <p>Số dư hiện tại</p>
+    <h1 id="walletPageBalance">0 đ</h1>
+  </div>
+
+  <div class="card form-card">
+    <h2>Nạp tiền vào ví</h2>
+    <p class="form-desc">Đây là chức năng nạp tiền demo, không liên kết ngân hàng thật.</p>
+
+    <form id="topupForm">
+      <label>Số tiền muốn nạp</label>
+      <input type="number" id="topupAmount" placeholder="Ví dụ: 500000" required />
+
+      <label>Nguồn tiền demo</label>
+      <select id="topupMethod" required>
+        <option value="">-- Chọn nguồn nạp --</option>
+        <option value="Thẻ ngân hàng demo">Thẻ ngân hàng demo</option>
+        <option value="Ví liên kết demo">Ví liên kết demo</option>
+        <option value="Tiền mặt demo">Tiền mặt demo</option>
+      </select>
+
+      <div class="quick-money">
+        <button type="button" onclick="setTopupAmount(50000)">50.000</button>
+        <button type="button" onclick="setTopupAmount(100000)">100.000</button>
+        <button type="button" onclick="setTopupAmount(200000)">200.000</button>
+        <button type="button" onclick="setTopupAmount(500000)">500.000</button>
+        <button type="button" onclick="setTopupAmount(1000000)">1.000.000</button>
+        <button type="button" onclick="setTopupAmount(2000000)">2.000.000</button>
+      </div>
+
+      <button type="submit">Nạp tiền</button>
+    </form>
+  </div>
+
+  <div id="topupSuccessModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="success-icon">✓</div>
+      <h2>Nạp tiền thành công</h2>
+      <p id="topupSuccessText">Bạn đã nạp tiền vào ví.</p>
+      <button id="closeTopupModal">Hoàn tất</button>
+    </div>
+  </div>
+</section>
+
+    <!-- Tài khoản -->
+    <section id="accountPage" class="page">
+      <h1 class="page-title">Tài khoản</h1>
+
+      <div class="card account-card">
+        <div class="avatar">👤</div>
+        <h2 id="accountEmail">user@email.com</h2>
+        <p>Expense Wallet Demo</p>
+      </div>
+
+      <button id="logoutBtn" class="logout-btn">Đăng xuất</button>
+    </section>
+
+    <!-- Footer -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-page="overviewPage">
+        <span>🏠</span>
+        <p>Tổng quan</p>
+      </button>
+
+      <button class="nav-item" data-page="historyPage">
+        <span>📜</span>
+        <p>Giao dịch</p>
+      </button>
+
+      <button class="add-btn" data-page="addPage">
+        <span>+</span>
+      </button>
+
+      <button class="nav-item" data-page="walletPage">
+        <span>👛</span>
+        <p>Ví tiền</p>
+      </button>
+
+      <button class="nav-item" data-page="accountPage">
+        <span>👤</span>
+        <p>Tài khoản</p>
+      </button>
+    </nav>
+
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
